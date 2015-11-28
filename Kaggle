@@ -1,0 +1,75 @@
+# Titanic Competition on Kaggle
+
+#import datasets
+train <- read.csv("~/train.csv")
+test <- read.csv("~/test.csv")
+
+#Briefly analyzing the database
+str(train)
+
+table(train$Survived)
+prop.table(table(train$Survived))
+# 38% of passengers survived the disaster in the training set
+
+#Analyzing passenger class
+table(train$Pclass)
+prop.table(table(train$Pclass))
+
+#Analyzing passenger class vs. survival
+table(train$Pclass,train$Survived)
+prop.table(table(train$Pclass, train$Survived),1)
+
+summary(train$Age)
+
+summary(train$Sex)
+
+#Analyzing passenger gender vs. survival
+table(train$Sex,train$Survived)
+prop.table(table(train$Sex, train$Survived),1)
+
+#Analyzing passenger class vs. survival
+table(train$Pclass,train$Survived)
+prop.table(table(train$Pclass, train$Survived),1)
+
+#Create a new variable to detect child (i.e."1" if age < 18 years), since "Age" is a continuous variable
+train$Child <- 0
+train$Child[train$Age < 18] <- 1
+
+#number of survived people wrt gender and age (sum function)
+aggregate(Survived ~ Child + Sex, data=train, FUN=sum)
+
+#total number of people in the previously defined subsets (length function)
+aggregate(Survived ~ Child + Sex, data=train, FUN=length)
+
+#Same as above, but with proportion
+aggregate(Survived ~ Child + Sex, data=train, FUN=function(x) {sum(x)/length(x)})
+
+#bin the Fare variable 
+train$Fare2 <- '30+'
+train$Fare2[train$Fare < 30 & train$Fare >= 20] <- '20-30'
+train$Fare2[train$Fare < 20 & train$Fare >= 10] <- '10-20'
+train$Fare2[train$Fare < 10] <- '<10'
+
+#Same function as above, but including also the new variable "Fare2"
+aggregate(Survived ~ Fare2 + Pclass + Sex, data=train, FUN=function(x) {sum(x)/length(x)})
+
+#Decision tree algorithm (as for Trevor's tutorial) - classification
+library(rpart)
+fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked, data=train, method="class")
+plot(fit)
+text(fit)
+
+#load packages for some better graphics 
+install.packages('rattle')
+install.packages('rpart.plot')
+install.packages('RColorBrewer')
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+fancyRpartPlot(fit)
+
+#First prediction
+Prediction <- predict(fit, test, type = "class")
+FirstSubmit <- data.frame(PassengerId = test$PassengerId, Survived = Prediction)
+write.csv(FirstSubmit, file = "myfirstdtree.csv", row.names = FALSE)
+
